@@ -1,6 +1,8 @@
 import os
 import openai
 import sys
+import readline
+import atexit
 
 # Define OpenAI API key 
 openai.api_key = os.environ['APIKEY_GPT3']
@@ -8,29 +10,33 @@ openai.api_key = os.environ['APIKEY_GPT3']
 # Set up the model and prompt
 model_engine = "text-davinci-003"
 
+GREEN = '\033[32m'
+END   = '\033[0m'
+console = GREEN + '<chatGPT>' + END
 
-def print_console(): 
-    GREEN = '\033[32m'
-    END   = '\033[0m'
-    print(GREEN + '<chatGPT>' + END, end='')
-    sys.stdout.flush()
-
+historyfile = os.path.join(os.path.expanduser("~"), ".chatGPT_history")
 
 def interactive_loop():
+    try:
+        readline.read_init_file()
+    except:
+        pass
+    try:
+        readline.read_history_file(historyfile)
+    except FileNotFoundError:
+        open(historyfile, 'wb').close()
+
     while True:
-        print_console()
-
         try:
-            chat = sys.stdin.readline() 
-        except BaseException as e:
-            print(e) # show nothing
+            chat = input(console)
+        except EOFError:
             break
-
-        if not chat:
-            break
-        elif chat == "\n": 
+        except KeyboardInterrupt:
+            print("^C")
             continue
 
+        if not chat: 
+            continue
         try:
             completion = openai.Completion.create(
                 engine=model_engine,
@@ -41,16 +47,16 @@ def interactive_loop():
                 temperature=0.5,
             )
         except BaseException as e:
-            print(e) # show nothing
             break
-
 
         response = completion.choices[0].text
         print(response)
 
     print("Byebye!")
+    atexit.register(readline.write_history_file, historyfile)
 
 def main(): 
     interactive_loop()
 
-main() 
+if __name__ == "__main__": 
+    main() 
