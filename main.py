@@ -26,6 +26,11 @@ def interactive_loop():
             print(e) # show nothing
             break
 
+        if not chat:
+            break
+        elif chat == "\n": 
+            continue
+
         try:
             completion = openai.Completion.create(
                 engine=model_engine,
