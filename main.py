@@ -1,21 +1,22 @@
+#!/bin/python3
+
 import os
 import openai
 import sys
 import readline
 import atexit
+from functools import reduce
 
-# Define OpenAI API key 
 openai.api_key = os.environ['APIKEY_GPT3']
 
 GREEN = '\033[32m'
 END   = '\033[0m'
 console = GREEN + '<chatGPT>' + END
-
 historyfile = os.path.join(os.path.expanduser("~"), ".chatGPT_history")
 
-def chat(conversationHistory):
-    response = openai.ChatCompletion.create(
-        messages=conversationHistory,
+def chat(history):
+    res = openai.ChatCompletion.create(
+        messages=history,
         max_tokens=1024,
         n=1,
         stream=True,
@@ -26,42 +27,36 @@ def chat(conversationHistory):
         model="gpt-3.5-turbo"
     )
 
-    fullResponse = ""
-    for chunk in response:
+    fullResponse = '' 
+    for chunk in res:
         text = chunk['choices'][0]['delta'].get('content')
-
-        if text is not None:
+        if text: 
             fullResponse += text
             print(text, end='', flush=True) 
 
-    print('')
     return fullResponse
 
-
 def main_loop(): 
-    conversationHistory = []
+    history = []
     while True:
         try:
             text = input(console)
         except EOFError:
             break
         except KeyboardInterrupt:
-            print("^C")
-            continue
-        if not text: 
+            print('^C')
             continue
 
-        user_action = {"role": "user", "content": text}
-        conversationHistory.append(user_action)
-        
-        try:
-            res = chat(conversationHistory)
-            chatGPT_responce = {"role": "assistant", "content": res}
-            conversationHistory.append(chatGPT_responce) 
-        except:
+        if text:
+            user_action = {"role": "user", "content": text}
+            history.append(user_action)
+            try:
+                res = chat(history)
+                chatGPT_responce = {"role": "assistant", "content": res}
+                history.append(chatGPT_responce) 
+            except:
+                pass
             print('')
-            pass
-
 
 def interactive_shell():
     try:
@@ -74,14 +69,11 @@ def interactive_shell():
         open(historyfile, 'wb').close()
 
     main_loop()
-
     print("Byebye!")
     atexit.register(readline.write_history_file, historyfile)
 
-
 def main(): 
     interactive_shell()
-
 
 if __name__ == "__main__": 
     main() 
